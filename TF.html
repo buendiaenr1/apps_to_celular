@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabla de Frecuencias Interactiva</title>
+    <!-- Meta para dispositivos móviles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            overflow-x: auto;
+            display: block;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            min-width: 100px;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .input-section {
+            background-color: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        textarea,
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 4px;
+            font-size: 13px;
+        }
+
+        /* Scroll horizontal para tablas largas */
+        #tabla-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        h1, h2, h3 {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        ul {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tabla de Frecuencias Interactiva</h1>
+
+        <div class="input-section">
+            <h2>Ingresa tus datos</h2>
+            <div class="form-group">
+                <label for="datos">Datos (separados por comas):</label>
+                <textarea id="datos" rows="4">18, 19, 20, 18.5, 19.2, 20.3, 21.1, 22.4, 18.7, 19.9, 20.5, 21.8, 19.3, 20.6, 21.2, 22.7, 23.1, 19.4, 20.8, 21.3</textarea>
+                <div id="error-datos" class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="intervalos">Número de intervalos (opcional):</label>
+                <input type="number" id="intervalos" min="1">
+                <small>Dejar vacío para calcular automáticamente con la Regla de Sturges</small>
+                <div id="error-intervalos" class="error"></div>
+            </div>
+            <button onclick="generarTabla()">Generar Tabla</button>
+        </div>
+
+        <h2>Resultados</h2>
+        <div id="calculos-preliminares"></div>
+        <div id="tabla-container"></div>
+
+        <h3>Explicación:</h3>
+        <ul>
+            <li><strong>Intervalo:</strong> Rango de valores para cada grupo</li>
+            <li><strong>Punto Medio (t<sub>i</sub>):</strong> (Límite inferior + Límite superior)/2</li>
+            <li><strong>Frecuencia (f):</strong> Cantidad de datos en cada intervalo</li>
+            <li><strong>Frec. Relativa (f*):</strong> f/n (frecuencia dividida por el total de datos)</li>
+            <li><strong>Frec. Acumulada (F):</strong> Suma acumulativa de frecuencias relativas</li>
+        </ul>
+    </div>
+
+    <script>
+        function contarDecimales(num) {
+            const numStr = num.toString();
+            if (numStr.indexOf('.') === -1) return 0;
+            return numStr.split('.')[1].length || 0;
+        }
+
+        function limpiarErrores() {
+            document.getElementById('error-datos').textContent = '';
+            document.getElementById('error-intervalos').textContent = '';
+        }
+
+        function generarTabla() {
+            limpiarErrores();
+
+            // Leer y procesar datos
+            const datosInput = document.getElementById('datos').value;
+            const datos = datosInput.split(',')
+                .map(item => parseFloat(item.trim()))
+                .filter(num => !isNaN(num));
+
+            if (datos.length === 0) {
+                document.getElementById('error-datos').textContent = "Por favor ingresa datos numéricos válidos";
+                return;
+            }
+
+            const n = datos.length;
+            const max = Math.max(...datos);
+            const min = Math.min(...datos);
+            const rango = max - min;
+
+            // Determinar número máximo de decimales
+            let maxDecimales = 0;
+            datos.forEach(num => {
+                const decimales = contarDecimales(num);
+                if (decimales > maxDecimales) maxDecimales = decimales;
+            });
+
+            const ajuste = 5 / Math.pow(10, maxDecimales + 1);
+            const liic = min - ajuste;
+            const lsic = max + ajuste;
+
+            // Número de intervalos
+            let numIntervalos = parseInt(document.getElementById('intervalos').value);
+            if (isNaN(numIntervalos) || numIntervalos <= 0) {
+                numIntervalos = Math.ceil(3.322 * Math.log10(n) + 1);
+            }
+
+            if (numIntervalos < 1) {
+                document.getElementById('error-intervalos').textContent = "El número de intervalos debe ser mayor a 0";
+                return;
+            }
+
+            const amplitud = (lsic - liic) / numIntervalos;
+
+            // Mostrar cálculos preliminares
+            document.getElementById('calculos-preliminares').innerHTML = `
+                <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                    <h3>Cálculos Preliminares</h3>
+                    <p><strong>Número de datos (n):</strong> ${n}</p>
+                    <p><strong>Máximo:</strong> ${max.toFixed(8)}</p>
+                    <p><strong>Mínimo:</strong> ${min.toFixed(8)}</p>
+                    <p><strong>Máximo número de decimales:</strong> ${maxDecimales}</p>
+                    <p><strong>Valor de ajuste:</strong> ${ajuste.toFixed(8)}</p>
+                    <p><strong>Límite Inferior Inicial Corregido (LIIC):</strong> ${liic.toFixed(8)}</p>
+                    <p><strong>Límite Superior Inicial Corregido (LSIC):</strong> ${lsic.toFixed(8)}</p>
+                    <p><strong>Rango corregido:</strong> ${(lsic - liic).toFixed(8)}</p>
+                    <p><strong>Número de intervalos:</strong> ${numIntervalos}</p>
+                    <p><strong>Amplitud del intervalo:</strong> ${amplitud.toFixed(8)}</p>
+                </div>
+            `;
+
+            // Generar intervalos
+            const intervalos = [];
+            let currentLI = liic;
+            for (let i = 0; i < numIntervalos; i++) {
+                const currentLS = currentLI + amplitud;
+                intervalos.push({
+                    li: currentLI,
+                    ls: currentLS,
+                    puntoMedio: (currentLI + currentLS) / 2,
+                    frecuencia: 0
+                });
+                currentLI = currentLS;
+            }
+
+            // Contar frecuencias
+            datos.forEach(dato => {
+                for (const intervalo of intervalos) {
+                    if ((intervalo.li <= dato && dato <= intervalo.ls)) {
+                        intervalo.frecuencia++;
+                        break;
+                    }
+                }
+            });
+
+            // Verificar que todos los datos estén incluidos
+            const totalFrecuencias = intervalos.reduce((sum, i) => sum + i.frecuencia, 0);
+            if (totalFrecuencias !== n) {
+                document.getElementById('error-datos').textContent = 
+                    `Error: No todos los datos fueron incluidos en los intervalos (${totalFrecuencias} de ${n})`;
+                return;
+            }
+
+            // Calcular frecuencias relativas y acumuladas
+            let frecAcumulada = 0;
+            intervalos.forEach(i => {
+                i.frecRelativa = i.frecuencia / n;
+                frecAcumulada += i.frecRelativa;
+                i.frecAcumulada = frecAcumulada;
+            });
+
+            // Función auxiliar para formatear números con 8 decimales
+            function fmt(num) {
+                return num.toFixed(8);
+            }
+
+            // Generar tabla HTML
+            let tablaHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Intervalo</th>
+                            <th>Punto Medio (t<sub>i</sub>)</th>
+                            <th>Frecuencia (f)</th>
+                            <th>Frec. Relativa (f*)</th>
+                            <th>Frec. Acumulada (F)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            intervalos.forEach(i => {
+                tablaHTML += `
+                    <tr>
+                        <td>${fmt(i.li)} - ${fmt(i.ls)}</td>
+                        <td>${fmt(i.puntoMedio)}</td>
+                        <td>${i.frecuencia}</td>
+                        <td>${i.frecRelativa.toFixed(8)}</td>
+                        <td>${i.frecAcumulada.toFixed(8)}</td>
+                    </tr>
+                `;
+            });
+
+            tablaHTML += `
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td>-</td>
+                        <td><strong>${n}</strong></td>
+                        <td><strong>1.00000000</strong></td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+            `;
+
+            document.getElementById('tabla-container').innerHTML = tablaHTML;
+        }
+
+        window.onload = () => {
+            generarTabla();
+        };
+    </script>
+</body>
+</html>

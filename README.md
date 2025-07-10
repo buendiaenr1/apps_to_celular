@@ -2,4 +2,4 @@
 aplicaciones para usar en celular
 
 ### * TF                  crea una tabla de frecuencias
-### * Div_polinomios      realiza la disiòn entre polinomios
+### * Div_polinomios      realiza la disión entre polinomios

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabla de Frecuencias Interactiva</title>
+    <!-- Meta para dispositivos móviles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <!-- Biblioteca para exportar a Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+            overflow-x: auto;
+            display: block;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            min-width: 100px;
+            white-space: nowrap;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .input-section {
+            background-color: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        #exportarExcel {
+            background-color: #2196F3;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        textarea,
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 4px;
+            font-size: 13px;
+        }
+
+        /* Scroll horizontal para tablas largas */
+        #tabla-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        h1, h2, h3 {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        ul {
+            font-size: 14px;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .button-container button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tabla de Frecuencias Interactiva</h1>
+
+        <div class="input-section">
+            <h2>Ingresa tus datos</h2>
+            <div class="form-group">
+                <label for="datos">Datos (separados por comas):</label>
+                <textarea id="datos" rows="4">18, 19, 20, 18.5, 19.2, 20.3, 21.1, 22.4, 18.7, 19.9, 20.5, 21.8, 19.3, 20.6, 21.2, 22.7, 23.1, 19.4, 20.8, 21.3</textarea>
+                <div id="error-datos" class="error"></div>
+            </div>
+            <div class="form-group">
+                <label for="intervalos">Número de intervalos (opcional):</label>
+                <input type="number" id="intervalos" min="1">
+                <small>Dejar vacío para calcular automáticamente con la Regla de Sturges</small>
+                <div id="error-intervalos" class="error"></div>
+            </div>
+            <div class="button-container">
+                <button onclick="generarTabla()">Generar Tabla</button>
+                <button id="exportarExcel" onclick="exportarAExcel()" disabled>Exportar a Excel</button>
+            </div>
+        </div>
+
+        <h2>Resultados</h2>
+        <div id="calculos-preliminares"></div>
+        <div id="tabla-container"></div>
+
+        <h3>Explicación:</h3>
+        <ul>
+            <li><strong>Intervalo:</strong> Rango de valores para cada grupo</li>
+            <li><strong>Punto Medio (t<sub>i</sub>):</strong> (Límite inferior + Límite superior)/2</li>
+            <li><strong>Frecuencia (f):</strong> Cantidad de datos en cada intervalo</li>
+            <li><strong>Frec. Relativa (f*):</strong> f/n (frecuencia dividida por el total de datos)</li>
+            <li><strong>Frec. Acumulada (F):</strong> Suma acumulativa de frecuencias relativas</li>
+        </ul>
+    </div>
+
+    <script>
+        // Variable global para almacenar los datos de la tabla
+        let tablaData = {
+            calculos: [],
+            intervalos: []
+        };
+
+        function contarDecimales(num) {
+            const numStr = num.toString();
+            if (numStr.indexOf('.') === -1) return 0;
+            return numStr.split('.')[1].length || 0;
+        }
+
+        function limpiarErrores() {
+            document.getElementById('error-datos').textContent = '';
+            document.getElementById('error-intervalos').textContent = '';
+        }
+
+        function generarTabla() {
+            limpiarErrores();
+
+            // Leer y procesar datos
+            const datosInput = document.getElementById('datos').value;
+            const datos = datosInput.split(',')
+                .map(item => parseFloat(item.trim()))
+                .filter(num => !isNaN(num));
+
+            if (datos.length === 0) {
+                document.getElementById('error-datos').textContent = "Por favor ingresa datos numéricos válidos";
+                document.getElementById('exportarExcel').disabled = true;
+                return;
+            }
+
+            const n = datos.length;
+            const max = Math.max(...datos);
+            const min = Math.min(...datos);
+            const rango = max - min;
+
+            // Determinar número máximo de decimales
+            let maxDecimales = 0;
+            datos.forEach(num => {
+                const decimales = contarDecimales(num);
+                if (decimales > maxDecimales) maxDecimales = decimales;
+            });
+
+            const ajuste = 5 / Math.pow(10, maxDecimales + 1);
+            const liic = min - ajuste;
+            const lsic = max + ajuste;
+
+            // Número de intervalos
+            let numIntervalos = parseInt(document.getElementById('intervalos').value);
+            if (isNaN(numIntervalos) || numIntervalos <= 0) {
+                numIntervalos = Math.ceil(3.322 * Math.log10(n) + 1);
+            }
+
+            if (numIntervalos < 1) {
+                document.getElementById('error-intervalos').textContent = "El número de intervalos debe ser mayor a 0";
+                document.getElementById('exportarExcel').disabled = true;
+                return;
+            }
+
+            const amplitud = (lsic - liic) / numIntervalos;
+
+            // Guardar cálculos preliminares para exportar
+            tablaData.calculos = [
+                { concepto: 'Número de datos (n)', valor: n },
+                { concepto: 'Máximo', valor: max.toFixed(8) },
+                { concepto: 'Mínimo', valor: min.toFixed(8) },
+                { concepto: 'Máximo número de decimales', valor: maxDecimales },
+                { concepto: 'Valor de ajuste', valor: ajuste.toFixed(8) },
+                { concepto: 'Límite Inferior Inicial Corregido (LIIC)', valor: liic.toFixed(8) },
+                { concepto: 'Límite Superior Inicial Corregido (LSIC)', valor: lsic.toFixed(8) },
+                { concepto: 'Rango corregido', valor: (lsic - liic).toFixed(8) },
+                { concepto: 'Número de intervalos', valor: numIntervalos },
+                { concepto: 'Amplitud del intervalo', valor: amplitud.toFixed(8) }
+            ];
+
+            // Mostrar cálculos preliminares
+            document.getElementById('calculos-preliminares').innerHTML = `
+                <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                    <h3>Cálculos Preliminares</h3>
+                    ${tablaData.calculos.map(item => 
+                        `<p><strong>${item.concepto}:</strong> ${item.valor}</p>`
+                    ).join('')}
+                </div>
+            `;
+
+            // Generar intervalos
+            tablaData.intervalos = [];
+            let currentLI = liic;
+            for (let i = 0; i < numIntervalos; i++) {
+                const currentLS = currentLI + amplitud;
+                const puntoMedio = (currentLI + currentLS) / 2;
+                tablaData.intervalos.push({
+                    intervalo: `${currentLI.toFixed(8)} - ${currentLS.toFixed(8)}`,
+                    puntoMedio: puntoMedio.toFixed(8),
+                    frecuencia: 0,
+                    frecRelativa: 0,
+                    frecAcumulada: 0
+                });
+                currentLI = currentLS;
+            }
+
+            // Contar frecuencias
+            datos.forEach(dato => {
+                for (const intervalo of tablaData.intervalos) {
+                    const [li, ls] = intervalo.intervalo.split(' - ').map(Number);
+                    if ((li <= dato && dato <= ls)) {
+                        intervalo.frecuencia++;
+                        break;
+                    }
+                }
+            });
+
+            // Verificar que todos los datos estén incluidos
+            const totalFrecuencias = tablaData.intervalos.reduce((sum, i) => sum + i.frecuencia, 0);
+            if (totalFrecuencias !== n) {
+                document.getElementById('error-datos').textContent = 
+                    `Error: No todos los datos fueron incluidos en los intervalos (${totalFrecuencias} de ${n})`;
+                document.getElementById('exportarExcel').disabled = true;
+                return;
+            }
+
+            // Calcular frecuencias relativas y acumuladas
+            let frecAcumulada = 0;
+            tablaData.intervalos.forEach(i => {
+                i.frecRelativa = (i.frecuencia / n).toFixed(8);
+                frecAcumulada += parseFloat(i.frecRelativa);
+                i.frecAcumulada = frecAcumulada.toFixed(8);
+            });
+
+            // Agregar fila de totales
+            tablaData.intervalos.push({
+                intervalo: 'TOTAL',
+                puntoMedio: '-',
+                frecuencia: n,
+                frecRelativa: '1.00000000',
+                frecAcumulada: '-'
+            });
+
+            // Generar tabla HTML
+            let tablaHTML = `
+                <table id="tabla-frecuencias">
+                    <thead>
+                        <tr>
+                            <th>Intervalo</th>
+                            <th>Punto Medio (t<sub>i</sub>)</th>
+                            <th>Frecuencia (f)</th>
+                            <th>Frec. Relativa (f*)</th>
+                            <th>Frec. Acumulada (F)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tablaData.intervalos.map(i => `
+                            <tr>
+                                <td>${i.intervalo}</td>
+                                <td>${i.puntoMedio}</td>
+                                <td>${i.frecuencia}</td>
+                                <td>${i.frecRelativa}</td>
+                                <td>${i.frecAcumulada}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('tabla-container').innerHTML = tablaHTML;
+            document.getElementById('exportarExcel').disabled = false;
+        }
+
+        function exportarAExcel() {
+            if (tablaData.intervalos.length === 0) {
+                alert("Primero genera la tabla de frecuencias");
+                return;
+            }
+
+            // Crear un nuevo libro de Excel
+            const wb = XLSX.utils.book_new();
+            
+            // Hoja para los cálculos preliminares
+            const calculosWS = XLSX.utils.json_to_sheet(tablaData.calculos);
+            XLSX.utils.book_append_sheet(wb, calculosWS, "Cálculos");
+            
+            // Hoja para los intervalos (excluyendo el total)
+            const intervalosSinTotal = tablaData.intervalos.slice(0, -1);
+            const intervalosWS = XLSX.utils.json_to_sheet(intervalosSinTotal);
+            XLSX.utils.book_append_sheet(wb, intervalosWS, "Intervalos");
+            
+            // Hoja para los datos completos (incluyendo cálculos y tabla)
+            const datosCompletos = [
+                ["Tabla de Frecuencias"],
+                ["Generado el:", new Date().toLocaleString()],
+                [""],
+                ["Cálculos Preliminares"],
+                ...tablaData.calculos.map(item => [item.concepto, item.valor]),
+                [""],
+                ["Tabla de Frecuencias"],
+                ["Intervalo", "Punto Medio", "Frecuencia", "Frec. Relativa", "Frec. Acumulada"],
+                ...tablaData.intervalos.map(i => [i.intervalo, i.puntoMedio, i.frecuencia, i.frecRelativa, i.frecAcumulada])
+            ];
+            const completaWS = XLSX.utils.aoa_to_sheet(datosCompletos);
+            XLSX.utils.book_append_sheet(wb, completaWS, "Resumen");
+            
+            // Generar el archivo Excel
+            XLSX.writeFile(wb, "tabla_frecuencias.xlsx");
+        }
+
+        window.onload = () => {
+            generarTabla();
+        };
+    </script>
+</body>
+</html>

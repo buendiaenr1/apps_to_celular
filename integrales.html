@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Avanzada de Integrales</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #eee;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 5px 5px;
+            background-color: white;
+            margin-bottom: 20px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+        }
+        .steps {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+        }
+        .step {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .math-expression {
+            font-family: "Times New Roman", serif;
+            font-style: italic;
+            background-color: #f9f9f9;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora Avanzada de Integrales</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="openTab('numerica')">Integración Numérica</div>
+            <div class="tab" onclick="openTab('literal')">Integración Literal</div>
+        </div>
+        
+        <!-- Integración Numérica -->
+        <div id="numerica" class="tab-content active">
+            <h2>Integración Numérica</h2>
+            <div class="form-group">
+                <label for="funcion-numerica">Función f(x):</label>
+                <input type="text" id="funcion-numerica" placeholder="Ej: exp(-x^2)" value="x^2">
+            </div>
+            <div class="form-group">
+                <label for="limite-a-numerica">Límite inferior (a):</label>
+                <input type="text" id="limite-a-numerica" placeholder="Ej: 0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="limite-b-numerica">Límite superior (b):</label>
+                <input type="text" id="limite-b-numerica" placeholder="Ej: 1" value="1">
+            </div>
+            <div class="form-group">
+                <label for="metodo-numerica">Método numérico:</label>
+                <select id="metodo-numerica">
+                    <option value="trapecio">Regla del Trapecio</option>
+                    <option value="simpson">Regla de Simpson (1/3)</option>
+                    <option value="simpson38">Regla de Simpson (3/8)</option>
+                    <option value="boole">Regla de Boole</option>
+                    <option value="rectangulo">Método del Rectángulo</option>
+                    <option value="romberg">Método de Romberg</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="intervalos-numerica">Número de intervalos/iteraciones:</label>
+                <input type="number" id="intervalos-numerica" min="2" value="10">
+            </div>
+            <button onclick="calcularIntegralNumerica()">Calcular Integral Numérica</button>
+            
+            <div class="result-section" id="resultado-numerica" style="display: none;">
+                <h3>Resultado</h3>
+                <div id="resultado-texto-numerica"></div>
+                <div class="steps" id="pasos-numerica"></div>
+            </div>
+        </div>
+        
+        <!-- Integración Literal -->
+        <div id="literal" class="tab-content">
+            <h2>Integración Literal</h2>
+            <div class="form-group">
+                <label for="funcion-literal">Función f(x):</label>
+                <input type="text" id="funcion-literal" placeholder="Ej: x*sin(x)" value="x^2">
+            </div>
+            <div class="form-group">
+                <label for="metodo-literal">Método de integración:</label>
+                <select id="metodo-literal">
+                    <option value="directa">Integración Directa</option>
+                    <option value="sustitucion">Sustitución</option>
+                    <option value="partes">Integración por Partes</option>
+                    <option value="fracciones">Fracciones Parciales</option>
+                    <option value="trigonometrica">Sustitución Trigonométrica</option>
+                </select>
+            </div>
+            <div id="parametros-adicionales" style="display: none;">
+                <!-- Aquí se agregarán parámetros adicionales según el método -->
+            </div>
+            <button onclick="calcularIntegralLiteral()">Calcular Integral Indefinida</button>
+            
+            <div class="result-section" id="resultado-literal" style="display: none;">
+                <h3>Resultado</h3>
+                <div id="resultado-texto-literal"></div>
+                <div class="steps" id="pasos-literal"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales para almacenar pasos
+        let pasosCalculo = [];
+        
+        // Cambiar entre pestañas
+        function openTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(button => button.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+        
+        // Métodos de integración numérica
+        function calcularIntegralNumerica() {
+            // Obtener valores de entrada
+            const funcionTexto = document.getElementById('funcion-numerica').value;
+            const a = parseFloat(document.getElementById('limite-a-numerica').value);
+            const b = parseFloat(document.getElementById('limite-b-numerica').value);
+            const metodo = document.getElementById('metodo-numerica').value;
+            const n = parseInt(document.getElementById('intervalos-numerica').value);
+            
+            // Validar entradas
+            if (isNaN(a) || isNaN(b) || isNaN(n)) {
+                mostrarError("Por favor ingrese valores válidos", 'numerica');
+                return;
+            }
+            
+            if (a >= b) {
+                mostrarError("El límite inferior debe ser menor que el superior", 'numerica');
+                return;
+            }
+            
+            if (n < 2) {
+                mostrarError("El número de intervalos debe ser al menos 2", 'numerica');
+                return;
+            }
+            
+            // Definir la función a integrar (versión simplificada)
+            let funcion;
+            try {
+                funcion = (x) => {
+                    // Reemplazar notación matemática para evaluación
+                    const expr = funcionTexto
+                        .replace(/(\w+)\^(\d+)/g, 'Math.pow($1,$2)')
+                        .replace(/sin\(/g, 'Math.sin(')
+                        .replace(/cos\(/g, 'Math.cos(')
+                        .replace(/exp\(/g, 'Math.exp(')
+                        .replace(/ln\(/g, 'Math.log(')
+                        .replace(/sqrt\(/g, 'Math.sqrt(')
+                        .replace(/x/g, x);
+                    return eval(expr);
+                };
+            } catch (e) {
+                mostrarError("Error en la función. Use formato como 'x^2', 'sin(x)', 'exp(x)'", 'numerica');
+                return;
+            }
+            
+            // Reiniciar pasos
+            pasosCalculo = [];
+            
+            // Calcular según el método seleccionado
+            let resultado;
+            switch(metodo) {
+                case 'trapecio':
+                    resultado = reglaTrapecio(funcion, a, b, n);
+                    break;
+                case 'simpson':
+                    resultado = reglaSimpson(funcion, a, b, n);
+                    break;
+                case 'simpson38':
+                    resultado = reglaSimpson38(funcion, a, b, n);
+                    break;
+                case 'boole':
+                    resultado = reglaBoole(funcion, a, b, n);
+                    break;
+                case 'rectangulo':
+                    resultado = metodoRectangulo(funcion, a, b, n);
+                    break;
+                case 'romberg':
+                    resultado = metodoRomberg(funcion, a, b, n);
+                    break;
+                default:
+                    mostrarError("Método no válido", 'numerica');
+                    return;
+            }
+            
+            // Mostrar resultados
+            mostrarResultadoNumerico(funcionTexto, a, b, resultado);
+        }
+        
+        // Métodos de integración literal
+        function calcularIntegralLiteral() {
+            const funcionTexto = document.getElementById('funcion-literal').value;
+            const metodo = document.getElementById('metodo-literal').value;
+            
+            // Validar entrada
+            if (!funcionTexto) {
+                mostrarError("Por favor ingrese una función", 'literal');
+                return;
+            }
+            
+            // Reiniciar pasos
+            pasosCalculo = [];
+            
+            // Calcular según el método seleccionado
+            let resultado;
+            switch(metodo) {
+                case 'directa':
+                    resultado = integracionDirecta(funcionTexto);
+                    break;
+                case 'sustitucion':
+                    resultado = integracionSustitucion(funcionTexto);
+                    break;
+                case 'partes':
+                    resultado = integracionPorPartes(funcionTexto);
+                    break;
+                case 'fracciones':
+                    resultado = fraccionesParciales(funcionTexto);
+                    break;
+                case 'trigonometrica':
+                    resultado = sustitucionTrigonometrica(funcionTexto);
+                    break;
+                default:
+                    mostrarError("Método no válido", 'literal');
+                    return;
+            }
+            
+            // Mostrar resultados
+            mostrarResultadoLiteral(funcionTexto, resultado);
+        }
+        
+        // =============================================
+        // Implementación de métodos numéricos
+        // =============================================
+        
+        function reglaTrapecio(f, a, b, n) {
+            const h = (b - a) / n;
+            let suma = 0.5 * (f(a) + f(b));
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Calcular ancho del intervalo (h)</h4>
+                <p class="math-expression">h = (b - a)/n = (${b} - ${a})/${n} = ${h.toFixed(6)}</p>
+            </div>`);
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 2: Sumar los extremos</h4>
+                <p class="math-expression">0.5 × [f(${a}) + f(${b})] = 0.5 × [${f(a).toFixed(6)} + ${f(b).toFixed(6)}] = ${suma.toFixed(6)}</p>
+            </div>`);
+            
+            for (let i = 1; i < n; i++) {
+                const x = a + i * h;
+                const fx = f(x);
+                suma += fx;
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso ${i + 2}: Sumar f(x${i})</h4>
+                    <p class="math-expression">x${i} = ${x.toFixed(6)}, f(x${i}) = ${fx.toFixed(6)}</p>
+                    <p>Suma acumulada: ${suma.toFixed(6)}</p>
+                </div>`);
+            }
+            
+            const resultado = h * suma;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso ${n + 2}: Multiplicar por h</h4>
+                <p class="math-expression">Resultado = h × Suma = ${h.toFixed(6)} × ${suma.toFixed(6)} = ${resultado.toFixed(6)}</p>
+            </div>`);
+            
+            return resultado;
+        }
+        
+        function reglaSimpson(f, a, b, n) {
+            if (n % 2 !== 0) {
+                n++;
+                pasosCalculo.push(`<div class="step">
+                    <h4>Ajuste: El método de Simpson requiere n par</h4>
+                    <p>Se ajusta n a ${n}</p>
+                </div>`);
+            }
+            
+            const h = (b - a) / n;
+            let suma = f(a) + f(b);
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Calcular ancho del intervalo (h)</h4>
+                <p class="math-expression">h = (b - a)/n = (${b} - ${a})/${n} = ${h.toFixed(6)}</p>
+            </div>`);
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 2: Sumar los extremos</h4>
+                <p class="math-expression">f(${a}) + f(${b}) = ${f(a).toFixed(6)} + ${f(b).toFixed(6)} = ${suma.toFixed(6)}</p>
+            </div>`);
+            
+            for (let i = 1; i < n; i++) {
+                const x = a + i * h;
+                const factor = (i % 2 === 0) ? 2 : 4;
+                const termino = factor * f(x);
+                suma += termino;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso ${i + 2}: Sumar término ${i}</h4>
+                    <p class="math-expression">x${i} = ${x.toFixed(6)}, factor = ${factor}, f(x${i}) = ${f(x).toFixed(6)}</p>
+                    <p class="math-expression">Término = ${factor} × ${f(x).toFixed(6)} = ${termino.toFixed(6)}</p>
+                    <p>Suma acumulada: ${suma.toFixed(6)}</p>
+                </div>`);
+            }
+            
+            const resultado = h * suma / 3;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso ${n + 2}: Multiplicar por h/3</h4>
+                <p class="math-expression">Resultado = (h/3) × Suma = ${(h/3).toFixed(6)} × ${suma.toFixed(6)} = ${resultado.toFixed(6)}</p>
+            </div>`);
+            
+            return resultado;
+        }
+        
+        function reglaSimpson38(f, a, b, n) {
+            if (n % 3 !== 0) {
+                n = Math.ceil(n / 3) * 3;
+                pasosCalculo.push(`<div class="step">
+                    <h4>Ajuste: El método de Simpson 3/8 requiere n múltiplo de 3</h4>
+                    <p>Se ajusta n a ${n}</p>
+                </div>`);
+            }
+            
+            const h = (b - a) / n;
+            let suma = f(a) + f(b);
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Calcular ancho del intervalo (h)</h4>
+                <p class="math-expression">h = (b - a)/n = (${b} - ${a})/${n} = ${h.toFixed(6)}</p>
+            </div>`);
+            
+            for (let i = 1; i < n; i++) {
+                const x = a + i * h;
+                const factor = (i % 3 === 0) ? 2 : 3;
+                const termino = factor * f(x);
+                suma += termino;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso ${i + 1}: Sumar término ${i}</h4>
+                    <p class="math-expression">x${i} = ${x.toFixed(6)}, factor = ${factor}, f(x${i}) = ${f(x).toFixed(6)}</p>
+                    <p class="math-expression">Término = ${factor} × ${f(x).toFixed(6)} = ${termino.toFixed(6)}</p>
+                    <p>Suma acumulada: ${suma.toFixed(6)}</p>
+                </div>`);
+            }
+            
+            const resultado = 3 * h * suma / 8;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso ${n + 1}: Multiplicar por 3h/8</h4>
+                <p class="math-expression">Resultado = (3h/8) × Suma = ${(3*h/8).toFixed(6)} × ${suma.toFixed(6)} = ${resultado.toFixed(6)}</p>
+            </div>`);
+            
+            return resultado;
+        }
+        
+        function reglaBoole(f, a, b, n) {
+            if (n % 4 !== 0) {
+                n = Math.ceil(n / 4) * 4;
+                pasosCalculo.push(`<div class="step">
+                    <h4>Ajuste: El método de Boole requiere n múltiplo de 4</h4>
+                    <p>Se ajusta n a ${n}</p>
+                </div>`);
+            }
+            
+            const h = (b - a) / n;
+            let suma = 7 * (f(a) + f(b));
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Calcular ancho del intervalo (h)</h4>
+                <p class="math-expression">h = (b - a)/n = (${b} - ${a})/${n} = ${h.toFixed(6)}</p>
+            </div>`);
+            
+            for (let i = 1; i < n; i++) {
+                const x = a + i * h;
+                let factor;
+                if (i % 4 === 0) {
+                    factor = 14;
+                } else if (i % 2 === 0) {
+                    factor = 12;
+                } else {
+                    factor = 32;
+                }
+                const termino = factor * f(x);
+                suma += termino;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso ${i + 1}: Sumar término ${i}</h4>
+                    <p class="math-expression">x${i} = ${x.toFixed(6)}, factor = ${factor}, f(x${i}) = ${f(x).toFixed(6)}</p>
+                    <p class="math-expression">Término = ${factor} × ${f(x).toFixed(6)} = ${termino.toFixed(6)}</p>
+                    <p>Suma acumulada: ${suma.toFixed(6)}</p>
+                </div>`);
+            }
+            
+            const resultado = 2 * h * suma / 45;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso ${n + 1}: Multiplicar por 2h/45</h4>
+                <p class="math-expression">Resultado = (2h/45) × Suma = ${(2*h/45).toFixed(6)} × ${suma.toFixed(6)} = ${resultado.toFixed(6)}</p>
+            </div>`);
+            
+            return resultado;
+        }
+        
+        function metodoRectangulo(f, a, b, n) {
+            const h = (b - a) / n;
+            let suma = 0;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Calcular ancho del intervalo (h)</h4>
+                <p class="math-expression">h = (b - a)/n = (${b} - ${a})/${n} = ${h.toFixed(6)}</p>
+            </div>`);
+            
+            for (let i = 0; i < n; i++) {
+                const x = a + (i + 0.5) * h; // Punto medio
+                const fx = f(x);
+                suma += fx;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso ${i + 2}: Sumar f(x${i})</h4>
+                    <p class="math-expression">x${i} = ${x.toFixed(6)}, f(x${i}) = ${fx.toFixed(6)}</p>
+                    <p>Suma acumulada: ${suma.toFixed(6)}</p>
+                </div>`);
+            }
+            
+            const resultado = h * suma;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso ${n + 2}: Multiplicar por h</h4>
+                <p class="math-expression">Resultado = h × Suma = ${h.toFixed(6)} × ${suma.toFixed(6)} = ${resultado.toFixed(6)}</p>
+            </div>`);
+            
+            return resultado;
+        }
+        
+        function metodoRomberg(f, a, b, maxIter) {
+            let R = [];
+            R[0] = [];
+            
+            // Primera aproximación (regla del trapecio con n=1)
+            R[0][0] = (b - a) * (f(a) + f(b)) / 2;
+            
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Aproximación inicial R(0,0)</h4>
+                <p class="math-expression">R(0,0) = (b-a)/2 × [f(a) + f(b)] = ${(b-a).toFixed(6)}/2 × [${f(a).toFixed(6)} + ${f(b).toFixed(6)}] = ${R[0][0].toFixed(6)}</p>
+            </div>`);
+            
+            for (let i = 1; i <= maxIter; i++) {
+                R[i] = [];
+                let h = (b - a) / Math.pow(2, i);
+                let sum = 0;
+                
+                // Suma de términos intermedios
+                for (let k = 1; k <= Math.pow(2, i-1); k++) {
+                    sum += f(a + (2*k - 1) * h);
+                }
+                
+                // Aproximación compuesta del trapecio
+                R[i][0] = 0.5 * R[i-1][0] + h * sum;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso ${i + 1}: Aproximación R(${i},0)</h4>
+                    <p class="math-expression">R(${i},0) = 0.5 × R(${i-1},0) + h × Σf(x_k) = 0.5 × ${R[i-1][0].toFixed(6)} + ${h.toFixed(6)} × ${sum.toFixed(6)} = ${R[i][0].toFixed(6)}</p>
+                </div>`);
+                
+                // Extrapolación de Richardson
+                for (let j = 1; j <= i; j++) {
+                    R[i][j] = R[i][j-1] + (R[i][j-1] - R[i-1][j-1]) / (Math.pow(4, j) - 1);
+                    
+                    pasosCalculo.push(`<div class="step">
+                        <h4>Paso ${i + 1}.${j}: Extrapolación R(${i},${j})</h4>
+                        <p class="math-expression">R(${i},${j}) = R(${i},${j-1}) + [R(${i},${j-1}) - R(${i-1},${j-1})] / (4^${j} - 1) = ${R[i][j].toFixed(6)}</p>
+                    </div>`);
+                }
+            }
+            
+            return R[maxIter][maxIter];
+        }
+        
+        // =============================================
+        // Implementación de métodos simbólicos (simplificada)
+        // =============================================
+        
+        function integracionDirecta(funcion) {
+            // Esta es una implementación muy simplificada
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Identificar integral inmediata</h4>
+                <p>Buscamos en la tabla de integrales inmediatas una expresión similar a:</p>
+                <p class="math-expression">∫ ${funcion} dx</p>
+            </div>`);
+            
+            let resultado;
+            
+            if (funcion.includes('x^')) {
+                const exponente = parseInt(funcion.split('^')[1]);
+                const nuevoExponente = exponente + 1;
+                const coeficiente = 1 / nuevoExponente;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Aplicar regla de potencias</h4>
+                    <p class="math-expression">∫ x^n dx = x^(n+1)/(n+1) + C</p>
+                    <p class="math-expression">n = ${exponente} → n+1 = ${nuevoExponente}</p>
+                    <p class="math-expression">Coeficiente = 1/${nuevoExponente}</p>
+                </div>`);
+                
+                resultado = `(1/${nuevoExponente})x^${nuevoExponente} + C`;
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Escribir resultado</h4>
+                    <p class="math-expression">∫ ${funcion} dx = ${resultado}</p>
+                </div>`);
+            } 
+            else if (funcion.includes('sin(x)')) {
+                resultado = "-cos(x) + C";
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Aplicar integral de seno</h4>
+                    <p class="math-expression">∫ sin(x) dx = -cos(x) + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Escribir resultado</h4>
+                    <p class="math-expression">∫ ${funcion} dx = ${resultado}</p>
+                </div>`);
+            }
+            else if (funcion.includes('cos(x)')) {
+                resultado = "sin(x) + C";
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Aplicar integral de coseno</h4>
+                    <p class="math-expression">∫ cos(x) dx = sin(x) + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Escribir resultado</h4>
+                    <p class="math-expression">∫ ${funcion} dx = ${resultado}</p>
+                </div>`);
+            }
+            else if (funcion.includes('exp(x)') || funcion.includes('e^x')) {
+                resultado = "exp(x) + C";
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Aplicar integral exponencial</h4>
+                    <p class="math-expression">∫ e^x dx = e^x + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Escribir resultado</h4>
+                    <p class="math-expression">∫ ${funcion} dx = ${resultado}</p>
+                </div>`);
+            }
+            else {
+                resultado = "No se reconoce como integral inmediata. Pruebe otro método.";
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: No es una integral inmediata reconocida</h4>
+                    <p>La función no coincide con las integrales inmediatas básicas.</p>
+                </div>`);
+            }
+            
+            return resultado;
+        }
+        
+        function integracionSustitucion(funcion) {
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Identificar sustitución adecuada</h4>
+                <p>Buscamos una parte de la función cuya derivada también esté presente.</p>
+                <p class="math-expression">∫ ${funcion} dx</p>
+            </div>`);
+            
+            let resultado;
+            
+            if (funcion.includes('(x^2 + 1)')) {
+                // Ejemplo: ∫ x(x^2 + 1)^3 dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Hacer sustitución u = x^2 + 1</h4>
+                    <p class="math-expression">Sea u = x^2 + 1 → du/dx = 2x → du = 2x dx</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Ajustar la integral</h4>
+                    <p class="math-expression">∫ x(x^2 + 1)^3 dx = (1/2) ∫ u^3 du</p>
+                    <p>El factor x dx se convierte en (1/2)du</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Integrar respecto a u</h4>
+                    <p class="math-expression">(1/2) ∫ u^3 du = (1/2)(u^4/4) + C = u^4/8 + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Reemplazar u por la expresión original</h4>
+                    <p class="math-expression">= (x^2 + 1)^4 / 8 + C</p>
+                </div>`);
+                
+                resultado = "(x^2 + 1)^4 / 8 + C";
+            }
+            else if (funcion.includes('sin(x^2)')) {
+                // Ejemplo: ∫ x sin(x^2) dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Hacer sustitución u = x^2</h4>
+                    <p class="math-expression">Sea u = x^2 → du/dx = 2x → du = 2x dx</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Ajustar la integral</h4>
+                    <p class="math-expression">∫ x sin(x^2) dx = (1/2) ∫ sin(u) du</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Integrar respecto a u</h4>
+                    <p class="math-expression">(1/2) ∫ sin(u) du = -(1/2)cos(u) + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Reemplazar u por la expresión original</h4>
+                    <p class="math-expression">= -(1/2)cos(x^2) + C</p>
+                </div>`);
+                
+                resultado = "-(1/2)cos(x^2) + C";
+            }
+            else {
+                resultado = "No se identificó una sustitución adecuada. Pruebe con otra función.";
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: No se encontró sustitución adecuada</h4>
+                    <p>No se pudo identificar una sustitución que simplifique la integral.</p>
+                </div>`);
+            }
+            
+            return resultado;
+        }
+        
+        function integracionPorPartes(funcion) {
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Identificar u y dv</h4>
+                <p>Recordemos la fórmula de integración por partes:</p>
+                <p class="math-expression">∫ u dv = uv - ∫ v du</p>
+                <p>Para la integral:</p>
+                <p class="math-expression">∫ ${funcion} dx</p>
+            </div>`);
+            
+            let resultado;
+            
+            if (funcion.includes('x e^x') || funcion.includes('x*e^x') || funcion.includes('x exp(x)')) {
+                // Ejemplo: ∫ x e^x dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Seleccionar u y dv</h4>
+                    <p class="math-expression">u = x → du = dx</p>
+                    <p class="math-expression">dv = e^x dx → v = e^x</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Aplicar la fórmula</h4>
+                    <p class="math-expression">∫ x e^x dx = x e^x - ∫ e^x dx</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Resolver la nueva integral</h4>
+                    <p class="math-expression">∫ e^x dx = e^x + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Combinar resultados</h4>
+                    <p class="math-expression">= x e^x - e^x + C = e^x (x - 1) + C</p>
+                </div>`);
+                
+                resultado = "e^x (x - 1) + C";
+            }
+            else if (funcion.includes('x sin(x)')) {
+                // Ejemplo: ∫ x sin(x) dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Seleccionar u y dv</h4>
+                    <p class="math-expression">u = x → du = dx</p>
+                    <p class="math-expression">dv = sin(x) dx → v = -cos(x)</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Aplicar la fórmula</h4>
+                    <p class="math-expression">∫ x sin(x) dx = -x cos(x) - ∫ -cos(x) dx</p>
+                    <p class="math-expression">= -x cos(x) + ∫ cos(x) dx</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Resolver la nueva integral</h4>
+                    <p class="math-expression">∫ cos(x) dx = sin(x) + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Combinar resultados</h4>
+                    <p class="math-expression">= -x cos(x) + sin(x) + C</p>
+                </div>`);
+                
+                resultado = "-x cos(x) + sin(x) + C";
+            }
+            else {
+                resultado = "No se identificó cómo aplicar integración por partes. Pruebe con otra función.";
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: No se encontró aplicación clara</h4>
+                    <p>No se pudo identificar una aplicación directa de integración por partes.</p>
+                </div>`);
+            }
+            
+            return resultado;
+        }
+        
+        function fraccionesParciales(funcion) {
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Verificar si es una función racional</h4>
+                <p>Método para integrales de la forma P(x)/Q(x) donde grado(P) < grado(Q)</p>
+                <p class="math-expression">∫ ${funcion} dx</p>
+            </div>`);
+            
+            let resultado;
+            
+            if (funcion.includes('1/(x^2 - 1)')) {
+                // Ejemplo: ∫ 1/(x^2 - 1) dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Factorizar denominador</h4>
+                    <p class="math-expression">x^2 - 1 = (x - 1)(x + 1)</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Descomponer en fracciones parciales</h4>
+                    <p class="math-expression">1/(x^2 - 1) = A/(x - 1) + B/(x + 1)</p>
+                    <p>Resolviendo: A = 1/2, B = -1/2</p>
+                    <p class="math-expression">= (1/2)/(x - 1) - (1/2)/(x + 1)</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Integrar cada término</h4>
+                    <p class="math-expression">∫ (1/2)/(x - 1) dx = (1/2)ln|x - 1|</p>
+                    <p class="math-expression">∫ -(1/2)/(x + 1) dx = -(1/2)ln|x + 1|</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Combinar resultados</h4>
+                    <p class="math-expression">= (1/2)ln|(x - 1)/(x + 1)| + C</p>
+                </div>`);
+                
+                resultado = "(1/2)ln|(x - 1)/(x + 1)| + C";
+            }
+            else if (funcion.includes('1/(x^2 + x)')) {
+                // Ejemplo: ∫ 1/(x^2 + x) dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Factorizar denominador</h4>
+                    <p class="math-expression">x^2 + x = x(x + 1)</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Descomponer en fracciones parciales</h4>
+                    <p class="math-expression">1/(x^2 + x) = A/x + B/(x + 1)</p>
+                    <p>Resolviendo: A = 1, B = -1</p>
+                    <p class="math-expression">= 1/x - 1/(x + 1)</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Integrar cada término</h4>
+                    <p class="math-expression">∫ 1/x dx = ln|x|</p>
+                    <p class="math-expression">∫ -1/(x + 1) dx = -ln|x + 1|</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Combinar resultados</h4>
+                    <p class="math-expression">= ln|x| - ln|x + 1| + C = ln|x/(x + 1)| + C</p>
+                </div>`);
+                
+                resultado = "ln|x/(x + 1)| + C";
+            }
+            else {
+                resultado = "No se identificó como una función racional factorizable. Pruebe con otra función.";
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: No es una función racional aplicable</h4>
+                    <p>El método de fracciones parciales no es aplicable directamente.</p>
+                </div>`);
+            }
+            
+            return resultado;
+        }
+        
+        function sustitucionTrigonometrica(funcion) {
+            pasosCalculo.push(`<div class="step">
+                <h4>Paso 1: Identificar forma trigonométrica</h4>
+                <p>Método para integrales con √(a² - x²), √(a² + x²) o √(x² - a²)</p>
+                <p class="math-expression">∫ ${funcion} dx</p>
+            </div>`);
+            
+            let resultado;
+            
+            if (funcion.includes('sqrt(1 - x^2)')) {
+                // Ejemplo: ∫ √(1 - x²) dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Hacer sustitución x = sinθ</h4>
+                    <p class="math-expression">Sea x = sinθ → dx = cosθ dθ</p>
+                    <p class="math-expression">√(1 - x²) = √(1 - sin²θ) = cosθ</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Sustituir en la integral</h4>
+                    <p class="math-expression">∫ √(1 - x²) dx = ∫ cosθ · cosθ dθ = ∫ cos²θ dθ</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Usar identidad trigonométrica</h4>
+                    <p class="math-expression">cos²θ = (1 + cos(2θ))/2</p>
+                    <p class="math-expression">∫ (1 + cos(2θ))/2 dθ = θ/2 + sin(2θ)/4 + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Volver a la variable original</h4>
+                    <p class="math-expression">θ = arcsin(x)</p>
+                    <p class="math-expression">sin(2θ) = 2sinθcosθ = 2x√(1 - x²)</p>
+                    <p class="math-expression">= (arcsin(x))/2 + (x√(1 - x²))/2 + C</p>
+                </div>`);
+                
+                resultado = "(arcsin(x) + x√(1 - x²))/2 + C";
+            }
+            else if (funcion.includes('1/sqrt(1 + x^2)')) {
+                // Ejemplo: ∫ 1/√(1 + x²) dx
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: Hacer sustitución x = tanθ</h4>
+                    <p class="math-expression">Sea x = tanθ → dx = sec²θ dθ</p>
+                    <p class="math-expression">√(1 + x²) = √(1 + tan²θ) = secθ</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 3: Sustituir en la integral</h4>
+                    <p class="math-expression">∫ 1/√(1 + x²) dx = ∫ (1/secθ) sec²θ dθ = ∫ secθ dθ</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 4: Resolver integral de secante</h4>
+                    <p class="math-expression">∫ secθ dθ = ln|secθ + tanθ| + C</p>
+                </div>`);
+                
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 5: Volver a la variable original</h4>
+                    <p class="math-expression">tanθ = x</p>
+                    <p class="math-expression">secθ = √(1 + x²)</p>
+                    <p class="math-expression">= ln|√(1 + x²) + x| + C</p>
+                </div>`);
+                
+                resultado = "ln|√(1 + x²) + x| + C";
+            }
+            else {
+                resultado = "No se identificó una sustitución trigonométrica aplicable. Pruebe con otra función.";
+                pasosCalculo.push(`<div class="step">
+                    <h4>Paso 2: No se encontró sustitución adecuada</h4>
+                    <p>No se pudo identificar una sustitución trigonométrica que simplifique la integral.</p>
+                </div>`);
+            }
+            
+            return resultado;
+        }
+        
+        // =============================================
+        // Funciones para mostrar resultados
+        // =============================================
+        
+        function mostrarError(mensaje, tipo) {
+            const resultadoDiv = document.getElementById(`resultado-${tipo}`);
+            resultadoDiv.style.display = 'block';
+            document.getElementById(`resultado-texto-${tipo}`).innerHTML = `<p class="error">${mensaje}</p>`;
+            document.getElementById(`pasos-${tipo}`).innerHTML = '';
+        }
+        
+        function mostrarResultadoNumerico(funcion, a, b, resultado) {
+            const resultadoDiv = document.getElementById('resultado-numerica');
+            resultadoDiv.style.display = 'block';
+            
+            document.getElementById('resultado-texto-numerica').innerHTML = `
+                <p><strong>Función:</strong> f(x) = ${funcion}</p>
+                <p><strong>Intervalo:</strong> [${a}, ${b}]</p>
+                <p><strong>Método:</strong> ${document.getElementById('metodo-numerica').value}</p>
+                <p><strong>Resultado aproximado:</strong> ${resultado.toFixed(6)}</p>
+            `;
+            
+            document.getElementById('pasos-numerica').innerHTML = pasosCalculo.join('');
+        }
+        
+        function mostrarResultadoLiteral(funcion, resultado) {
+            const resultadoDiv = document.getElementById('resultado-literal');
+            resultadoDiv.style.display = 'block';
+            
+            document.getElementById('resultado-texto-literal').innerHTML = `
+                <p><strong>Función:</strong> f(x) = ${funcion}</p>
+                <p><strong>Método:</strong> ${document.getElementById('metodo-literal').value}</p>
+                <p><strong>Resultado:</strong> ${resultado}</p>
+            `;
+            
+            document.getElementById('pasos-literal').innerHTML = pasosCalculo.join('');
+        }
+        
+        // Event listeners para parámetros adicionales
+        document.getElementById('metodo-literal').addEventListener('change', function() {
+            const metodo = this.value;
+            const parametrosDiv = document.getElementById('parametros-adicionales');
+            
+            if (metodo === 'sustitucion') {
+                parametrosDiv.innerHTML = `
+                    <div class="form-group">
+                        <label for="sustitucion-u">Expresión para u:</label>
+                        <input type="text" id="sustitucion-u" placeholder="Ej: x^2 + 1">
+                    </div>
+                `;
+                parametrosDiv.style.display = 'block';
+            } 
+            else if (metodo === 'partes') {
+                parametrosDiv.innerHTML = `
+                    <div class="form-group">
+                        <label for="partes-u">Parte para u:</label>
+                        <input type="text" id="partes-u" placeholder="Ej: x">
+                    </div>
+                    <div class="form-group">
+                        <label for="partes-dv">Parte para dv:</label>
+                        <input type="text" id="partes-dv" placeholder="Ej: e^x dx">
+                    </div>
+                `;
+                parametrosDiv.style.display = 'block';
+            }
+            else {
+                parametrosDiv.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
